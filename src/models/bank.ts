@@ -1,6 +1,8 @@
 import { BankAccountId, UserId } from "@/types/Common"
 import BankAccount from "./bank-account"
 import GlobalRegistry from "@/services/GlobalRegistry"
+import User from "./user"
+import TransactionService from "@/services/TransactionService"
 
 export default class Bank {
   private static idCounter = 0
@@ -46,54 +48,53 @@ export default class Bank {
     transactionAmount: number,
     recieverBankId?: number
   ) {
-    const senderAccounts = GlobalRegistry.getUserAccounts(senderUserId)
-    const recieverAccounts = GlobalRegistry.getUserAccounts(recieverUserId)
+    let allBanks = GlobalRegistry.getBanks()
+    let bankAllowsNegative: boolean = this.isNegativeAllowed
 
-    const validSenderAccounts = this.accounts.filter((ac) =>
-      senderAccounts.includes(ac.getId())
-    )
+    let sender: User = GlobalRegistry.getUserById(senderUserId)
+    let senderBankAccounts: BankAccount[] = []
+    let senderBankAccountsIds = sender.getUserAccounts()
 
-    let validRecieverAccount: BankAccount
+    let reciever: User = GlobalRegistry.getUserById(recieverUserId)
+    let recieverBankAccount: BankAccount
+    let recieverBankAccountIds = reciever.getUserAccounts()
 
-    let currenetReciverBalance: number
-
-    if (!recieverBankId) {
-      validRecieverAccount = this.accounts.filter((ac) =>
-        recieverAccounts.includes(ac.getId())
-      )[0]
-      currenetReciverBalance = validRecieverAccount.getBalance()
-    } else {
-      const recieverBank = GlobalRegistry.getBanks()[recieverBankId]
-
-      for( const account of recieverBank.accounts){
-        if(recieverAccounts.includes(account.getId())){
-          validRecieverAccount = account;
-          currenetReciverBalance = account.getBalance();
-          break;
+    //finding the reciever bank account
+    if (recieverBankId) {
+      let bank = allBanks[recieverBankId]
+      for (let i = 0; i < recieverBankAccountIds.length; i++) {
+        let probableAccount = bank.getAccount(recieverBankAccountIds[i])
+        if (probableAccount != null) {
+          recieverBankAccount = probableAccount
+          break
         }
       }
-
-    }
-
-    for (const senderAccount of validSenderAccounts) {
-      const currentSenderBalance = senderAccount.getBalance()
-
-      if (currentSenderBalance >= transactionAmount) {
-        senderAccount.setBalance(currentSenderBalance - transactionAmount)
-        validRecieverAccount.setBalance(
-          currenetReciverBalance + transactionAmount
-        )
-
-        return
+    } else {
+      for (const accountId of recieverBankAccountIds) {
+        for (const bank of Object.values(allBanks)) {
+          const probableAccount = bank.getAccount(accountId)
+          if (probableAccount) {
+            recieverBankAccount = probableAccount
+            break
+          }
+        }
       }
     }
 
-    if (this.isNegativeAllowed == false) {
-      throw "Insufficient funds"
+    //finding the sender accounts
+
+    for (const accountId of senderBankAccountsIds) {
+      let account: BankAccount = this.getAccount(accountId)
+      if (account) {
+        senderBankAccounts.push(account)
+      }
     }
 
-    const currentSenderBalance = validSenderAccounts[0].getBalance()
-    validSenderAccounts[0].setBalance(currentSenderBalance - transactionAmount)
-    validRecieverAccount.setBalance(currenetReciverBalance + transactionAmount)
+    TransactionService.makeTransaction(
+      senderBankAccounts,
+      recieverBankAccount,
+      transactionAmount,
+      bankAllowsNegative
+    )
   }
 }
