@@ -11,7 +11,7 @@ export default class TransactionService {
   ) {
     let balanceToBeTransferred = transactionAmount
 
-    for (let i = 0; i <= senderBankAccounts.length; i++) {
+    for (let i = 0; i < senderBankAccounts.length; i++) {
       const balanceAmount = senderBankAccounts[i].getBalance()
       let debitAmount = Math.min(balanceToBeTransferred, balanceAmount)
 
