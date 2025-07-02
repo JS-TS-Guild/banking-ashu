@@ -1,30 +1,37 @@
-import GlobalRegistry from "@/services/GlobalRegistry";
-import { BankAccountId } from "@/types/Common";
+import GlobalRegistry from "@/services/GlobalRegistry"
+import { BankAccountId } from "@/types/Common"
 
-export default class User{
-  private static idCounter = 0;
+export default class User {
+  private static idCounter = 0
 
-  id: number;
-  name: string;
+  id: number
+  name: string
   accounts: BankAccountId[]
 
-  private constructor( name: string, account: BankAccountId[] = []) {
-    this.id = User.idCounter++;
-    this.name = name;
-    this.accounts = account;
+  private constructor(name: string, account: BankAccountId[] = []) {
+    this.id = User.idCounter++
+    this.name = name
+    this.accounts = account
   }
 
-  static create(name: string, account: BankAccountId[] = []){
-    const newUser = new User(name, account);
-    GlobalRegistry.addUser(newUser.getId() , newUser)
-    return newUser;
+  static create(name: string, account: BankAccountId[] = []) {
+    const newUser = new User(name, account)
+    GlobalRegistry.addUser(newUser.getId(), newUser)
+    return newUser
   }
 
-  getId() : number{
-    return this.id;
+  getId(): number {
+    return this.id
   }
 
-  getUserAccounts() : BankAccountId[]{
-    return this.accounts;
+  getUserAccounts(): BankAccountId[] {
+    return this.accounts
+  }
+
+  setAccountsPriority(accountId: BankAccountId) {
+    const accountIndex = this.accounts.indexOf(accountId)
+
+    this.accounts.splice(accountIndex, 1)
+    this.accounts.unshift(accountId)
   }
 }

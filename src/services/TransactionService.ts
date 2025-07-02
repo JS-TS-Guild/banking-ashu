@@ -1,11 +1,13 @@
 import BankAccount from "@/models/bank-account"
+import User from "@/models/user"
 
 export default class TransactionService {
   static makeTransaction(
     senderBankAccounts: BankAccount[],
     receiverBankAccount: BankAccount,
     transactionAmount: number,
-    bankAllowsNegative: boolean
+    bankAllowsNegative: boolean,
+    sender: User
   ) {
     let balanceToBeTransferred = transactionAmount
 
@@ -14,15 +16,17 @@ export default class TransactionService {
       let debitAmount = Math.min(balanceToBeTransferred, balanceAmount)
 
       senderBankAccounts[i].debit(debitAmount)
+      sender.setAccountsPriority(senderBankAccounts[i].getId())
       balanceToBeTransferred -= debitAmount
 
       if (balanceToBeTransferred <= 0) break
     }
 
     if (balanceToBeTransferred > 0) {
-      if (bankAllowsNegative)
+      if (bankAllowsNegative) {
         senderBankAccounts[0].debit(balanceToBeTransferred)
-      else {
+        sender.setAccountsPriority(senderBankAccounts[0].getId())
+      } else {
         throw new Error("Insufficient funds")
       }
     }
